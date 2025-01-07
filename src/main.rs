@@ -1,4 +1,4 @@
-// main_loader/src/main.rs
+/// 插件管理器
 mod plugin_manager;
 use chm_core_define::{PluginError, Result};
 use plugin_manager::PluginManager;

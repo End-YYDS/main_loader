@@ -3,7 +3,6 @@ use std::os::unix::fs::PermissionsExt;
 
 use chm_core_define::plugin_define::Event;
 use chm_core_define::PluginError;
-// main_loader/src/plugin_manager.rs
 use chm_core_define::{plugin_define::Plugin, Result};
 use libloading::Library;
 use std::collections::{HashMap, HashSet};
@@ -12,46 +11,64 @@ use std::path::{Path, PathBuf};
 /// 插件狀態
 #[derive(Debug, Clone, PartialEq)]
 #[allow(unused)]
+/// 插件狀態枚舉，用來表示插件的不同狀態
 pub enum PluginState {
+    /// 插件尚未加載
     Unloaded,
+    /// 插件已加載，但未啟用
     Loaded,
+    /// 插件已啟用
     Enabled,
+    /// 插件已禁用
     Disabled,
+    /// 插件處於錯誤狀態，附帶錯誤訊息
     Error(String),
 }
-// 插件條目
+/// 插件條目，表示單個插件的詳細資訊
 #[derive(Debug)]
 struct PluginEntry {
+    /// 插件的具體實例
     plugin: Box<dyn Plugin>,
+    /// 動態庫的句柄，用於管理插件的生命周期
     library: Library,
+    /// 插件當前的狀態      
     state: PluginState,
 }
 
-// 事件系統
+/// 事件系統，用於管理事件的訂閱和通知
 struct EventBus {
+    /// 每個事件對應的訂閱插件集合
     subscribers: HashMap<String, HashSet<String>>, // event_name -> plugin_names
 }
 #[allow(unused)]
 impl EventBus {
+    /// 創建新的事件總線
     fn new() -> Self {
         Self {
             subscribers: HashMap::new(),
         }
     }
     #[allow(clippy::unwrap_or_default)]
+    /// 訂閱事件
+    /// - `event`: 要訂閱的事件名稱
+    /// - `plugin`: 訂閱此事件的插件名稱
     fn subscribe(&mut self, event: &str, plugin: &str) {
         self.subscribers
             .entry(event.to_string())
             .or_insert_with(HashSet::new)
             .insert(plugin.to_string());
     }
-
+    /// 取消訂閱事件
+    /// - `event`: 要取消的事件名稱
+    /// - `plugin`: 要取消訂閱的插件名稱
     fn unsubscribe(&mut self, event: &str, plugin: &str) {
         if let Some(subscribers) = self.subscribers.get_mut(event) {
             subscribers.remove(plugin);
         }
     }
-
+    /// 獲取某事件的所有訂閱者
+    /// - `event`: 事件名稱
+    /// - 返回值: 訂閱此事件的插件名稱列表
     fn get_subscribers(&self, event: &str) -> Vec<String> {
         self.subscribers
             .get(event)
@@ -60,13 +77,19 @@ impl EventBus {
     }
 }
 
+/// 插件管理器，用於管理插件的加載、啟用、禁用和事件通知
 pub struct PluginManager {
+    /// 插件的集合，鍵為插件名稱
     plugins: HashMap<String, PluginEntry>,
+    /// 插件目錄的路徑
     plugin_dir: PathBuf,
+    /// 事件總線
     event_bus: EventBus,
 }
 #[allow(unused)]
 impl PluginManager {
+    /// 創建新的插件管理器
+    /// - `plugin_dir`: 插件目錄路徑
     pub fn new<P: AsRef<Path>>(plugin_dir: P) -> Self {
         Self {
             plugins: HashMap::new(),
@@ -74,7 +97,9 @@ impl PluginManager {
             event_bus: EventBus::new(),
         }
     }
-
+    /// 加載單個插件
+    /// - `path`: 插件檔案的路徑
+    /// - 返回值: 成功或失敗的結果
     pub fn load_plugin(&mut self, path: &Path) -> Result<()> {
         unsafe {
             let lib = Library::new(path)
@@ -109,7 +134,9 @@ impl PluginManager {
             Ok(())
         }
     }
-
+    /// 啟用插件
+    /// - `name`: 插件名稱
+    /// - 返回值: 成功或失敗的結果
     pub fn enable_plugin(&mut self, name: &str) -> Result<()> {
         let ret = self.plugins.get_mut(name);
         if let Some(entry) = ret {
@@ -125,7 +152,9 @@ impl PluginManager {
         }
         Err(PluginError::EnableError("Can't enable plugin".into()))
     }
-
+    /// 禁用插件
+    /// - `name`: 插件名稱
+    /// - 返回值: 成功或失敗的結果
     pub fn disable_plugin(&mut self, name: &str) -> Result<()> {
         let ret = self.plugins.get_mut(name);
         if let Some(entry) = ret {
@@ -141,7 +170,9 @@ impl PluginManager {
         }
         Err(PluginError::DisableError("Can't disable plugin".into()))
     }
-
+    /// 卸載插件
+    /// - `name`: 插件名稱
+    /// - 返回值: 成功或失敗的結果
     pub fn unload_plugin(&mut self, name: &str) -> Result<()> {
         // 先檢查插件是否存在
         if let Some(entry) = self.plugins.get(name) {
@@ -173,8 +204,9 @@ impl PluginManager {
         Ok(())
     }
 
-    // === 事件系統 ===
-
+    /// 發送事件
+    /// - `event`: 要發送的事件
+    /// - 返回值: 成功或失敗的結果
     pub fn broadcast_event(&self, event: Event) -> Result<()> {
         let subscribers = self.event_bus.get_subscribers(&event.name);
 
@@ -205,7 +237,8 @@ impl PluginManager {
 
         Ok(())
     }
-
+    /// 載入所有插件
+    /// - 返回值: 成功或失敗的結果
     pub fn load_all_plugins(&mut self) -> Result<()> {
         let mut errors = Vec::new();
 
@@ -295,11 +328,14 @@ impl PluginManager {
 
         false
     }
-
+    /// 獲取插件
+    /// - `name`: 插件名稱
+    /// - 返回值: 插件實例
     pub fn get_plugin(&self, name: &str) -> Option<&dyn Plugin> {
         self.plugins.get(name).map(|entry| entry.plugin.as_ref())
     }
-
+    /// 獲取所有插件
+    /// - 返回值: 插件列表
     pub fn get_all_plugins(&self) -> Vec<(&str, &str, &str)> {
         self.plugins
             .values()
@@ -312,7 +348,8 @@ impl PluginManager {
             })
             .collect()
     }
-
+    /// 卸載所有插件
+    /// - 返回值: 成功或失敗的結果
     pub fn unload_all_plugins(&mut self) -> Result<()> {
         let names: Vec<_> = self.plugins.keys().cloned().collect();
         for name in names {
@@ -323,7 +360,7 @@ impl PluginManager {
         Ok(())
     }
 }
-
+/// 插件管理器的析構函數，用於在管理器被刪除時卸載所有插件
 impl Drop for PluginManager {
     fn drop(&mut self) {
         if let Err(e) = self.unload_all_plugins() {
