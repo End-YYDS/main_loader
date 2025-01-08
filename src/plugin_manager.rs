@@ -36,6 +36,7 @@ struct PluginEntry {
 }
 
 /// 事件系統，用於管理事件的訂閱和通知
+#[derive(Debug)]
 struct EventBus {
     /// 每個事件對應的訂閱插件集合
     subscribers: HashMap<String, HashSet<String>>, // event_name -> plugin_names
@@ -78,6 +79,7 @@ impl EventBus {
 }
 
 /// 插件管理器，用於管理插件的加載、啟用、禁用和事件通知
+#[derive(Debug)]
 pub struct PluginManager {
     /// 插件的集合，鍵為插件名稱
     plugins: HashMap<String, PluginEntry>,

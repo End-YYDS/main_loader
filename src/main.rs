@@ -1,8 +1,8 @@
 /// 插件管理器
 mod plugin_manager;
-use chm_core_define::{PluginError, Result};
+use chm_core_define::{Event, PluginError, Result};
 use plugin_manager::PluginManager;
-use std::path::Path;
+use std::{collections::HashMap, path::Path};
 
 fn main() -> Result<()> {
     // 創建插件目錄
@@ -25,9 +25,20 @@ fn main() -> Result<()> {
     for (name, version, description) in manager.get_all_plugins() {
         println!("{} v{}: {}", name, version, description);
     }
+    dbg!(&manager);
+
+    
     let ret = manager.get_plugin("basic_plugin");
     if let Some(r) = ret {
+        let mut data = HashMap::new();
+        data.insert("action".to_string(), "start".to_string());
+        let event = Event {
+            name: "event2".to_string(),
+            data,
+            priority: 1,
+        };
         println!("{:#?}", r);
+        r.handle_event(&event)?;
     }
     println!("\nUnloading plugins...");
     Ok(())
