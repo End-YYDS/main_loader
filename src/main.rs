@@ -27,18 +27,17 @@ fn main() -> Result<()> {
     }
     dbg!(&manager);
 
-    
     let ret = manager.get_plugin("basic_plugin");
     if let Some(r) = ret {
-        let mut data = HashMap::new();
-        data.insert("action".to_string(), "start".to_string());
-        let event = Event {
-            name: "event2".to_string(),
-            data,
-            priority: 1,
-        };
+        // let mut data = HashMap::new();
+        // data.insert("action".to_string(), "start".to_string());
+        // let event = Event {
+        //     name: "event2".to_string(),
+        //     data,
+        //     priority: 1,
+        // };
         println!("{:#?}", r);
-        r.handle_event(&event)?;
+        // r.handle_event(&event)?;
     }
     println!("\nUnloading plugins...");
     Ok(())

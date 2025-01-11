@@ -209,36 +209,50 @@ impl PluginManager {
     /// 發送事件
     /// - `event`: 要發送的事件
     /// - 返回值: 成功或失敗的結果
-    pub fn broadcast_event(&self, event: Event) -> Result<()> {
-        let subscribers = self.event_bus.get_subscribers(&event.name);
+    // pub fn broadcast_event(&self, event: Event) -> Result<()> {
+    //     let subscribers = self.event_bus.get_subscribers(&event.name);
+    //     // 根據優先級排序
+    //     let mut subscribers: Vec<_> = subscribers
+    //         .iter()
+    //         .filter_map(|name| {
+    //             self.plugins.get(name).and_then(|entry| {
+    //                 if entry.state == PluginState::Enabled {
+    //                     Some((name, entry))
+    //                 } else {
+    //                     None
+    //                 }
+    //             })
+    //         })
+    //         .collect();
+    //     subscribers.sort_by_key(|(_, entry)| {
+    //         entry.plugin.subscribed_events().len() // 簡單用訂閱數量作為優先級
+    //     });
+    //     // 依序發送事件
+    //     for (name, entry) in subscribers {
+    //         if let Err(e) = entry.plugin.handle_event(&event) {
+    //             println!("Error handling event in plugin {}: {}", name, e);
+    //         }
+    //     }
+    //     Ok(())
+    // }
+    // pub fn broadcast_event(&self, event: Event) -> Result<()> {
+    //     let subscribers = self.event_bus.get_subscribers(&event.name);
 
-        // 根據優先級排序
-        let mut subscribers: Vec<_> = subscribers
-            .iter()
-            .filter_map(|name| {
-                self.plugins.get(name).and_then(|entry| {
-                    if entry.state == PluginState::Enabled {
-                        Some((name, entry))
-                    } else {
-                        None
-                    }
-                })
-            })
-            .collect();
+    //     for name in subscribers {
+    //         if let Some(entry) = self.plugins.get(&name) {
+    //             if entry.state == PluginState::Enabled {
+    //                 // 處理事件並檢查是否有回應事件
+    //                 if let Some(response_event) = entry.plugin.handle_event(&event)? {
+    //                     // 遞歸發送回應事件
+    //                     self.broadcast_event(response_event)?;
+    //                 }
+    //             }
+    //         }
+    //     }
 
-        subscribers.sort_by_key(|(_, entry)| {
-            entry.plugin.subscribed_events().len() // 簡單用訂閱數量作為優先級
-        });
+    //     Ok(())
+    // }
 
-        // 依序發送事件
-        for (name, entry) in subscribers {
-            if let Err(e) = entry.plugin.handle_event(&event) {
-                println!("Error handling event in plugin {}: {}", name, e);
-            }
-        }
-
-        Ok(())
-    }
     /// 載入所有插件
     /// - 返回值: 成功或失敗的結果
     pub fn load_all_plugins(&mut self) -> Result<()> {
